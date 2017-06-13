@@ -9,6 +9,7 @@ module Lib
   , Direction(..)
   , Move(..)
   , move
+  , warehouse_solved
   ) where
 
 import Data.HashMap.Strict as H
@@ -86,8 +87,24 @@ move dir warehouse@(WH map w h r c) =
             (H.insert (r, c) (Space Empty d) $
              H.insert (r', c') (Space Player d') map)
        in (WH newmap w h r' c', Walk dir)
-    _ -> push
+    Space Box d' ->
+      case get warehouse r'' c'' of
+        Space Empty d'' ->
+          let newmap =
+                (H.insert (r, c) (Space Empty d) $
+                 H.insert (r', c') (Space Player d') $
+                 H.insert (r'', c'') (Space Box d'') map)
+           in (WH newmap w h r' c', Push dir)
+        _ -> (warehouse, NoMove)
+    _ -> (warehouse, NoMove)
   where
     Space Player d = get warehouse r c
     (r', c') = step dir r c
-    push = (warehouse, NoMove)
+    (r'', c'') = step dir r' c'
+
+warehouse_solved :: Warehouse -> Bool
+warehouse_solved (WH map _ _ _ _) = all aux map
+  where
+    aux (Space Box Dot) = True
+    aux (Space _ Dot) = False
+    aux _ = True
