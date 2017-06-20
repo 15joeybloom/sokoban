@@ -1,49 +1,54 @@
-module Lib
+{-# LANGUAGE DeriveGeneric #-}
+
+module Sokoban
   ( Contents(..)
   , Dot(..)
   , Square(..)
   , Warehouse
-  , make_warehouse
+  , warehouse_from_list
+  , warehouse_from_map
   , warehouse_dimensions
   , get
   , Direction(..)
   , Move(..)
   , move
   , warehouse_solved
+  , undo
   ) where
 
 import Data.HashMap.Strict as H
 import Data.List (findIndex)
+import GHC.Generics (Generic)
 
 data Contents
   = Player
   | Box
   | Empty
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 data Dot
   = Dot
   | Not
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 data Square
   = Space Contents
           Dot
   | Wall
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 data Direction
   = North
   | South
   | East
   | West
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 data Move
   = Walk Direction
   | Push Direction
   | NoMove
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 data Warehouse = WH
   { whmap :: H.HashMap (Int, Int) Square
@@ -57,8 +62,8 @@ data Warehouse = WH
 is_player (Space Player _) = True
 is_player _ = False
 
-make_warehouse :: [[Square]] -> Maybe Warehouse
-make_warehouse grid = do
+warehouse_from_list :: [[Square]] -> Maybe Warehouse
+warehouse_from_list grid = do
   pr <- findIndex (any is_player) grid
   pc <- findIndex is_player $ grid !! pr
   return $ WH newmap w h pr pc []
@@ -69,6 +74,18 @@ make_warehouse grid = do
         aux2 h (c, x) = H.insert (r, c) x h
     w = foldl (flip $ max . length) 0 grid
     h = length grid
+
+warehouse_from_map :: H.HashMap (Int, Int) Square -> Maybe Warehouse
+warehouse_from_map map
+  | length players_map /= 1 = Nothing
+  | otherwise = Just $ WH newmap w h pr pc []
+  where
+    (pr, pc) = head $ keys players_map
+    players_map = H.filter is_player newmap
+    w = (+ 1) $ foldl (\x (_, c) -> max x c) 0 coords
+    h = (+ 1) $ foldl (\x (r, _) -> max x r) 0 coords
+    coords = keys newmap
+    newmap = filterWithKey (\(r, c) v -> r >= 0 && c >= 0 && v /= Wall) map
 
 warehouse_dimensions wh = (width wh, height wh)
 
@@ -128,6 +145,7 @@ undo warehouse@(WH newmap w h r' c' (Push dir:moves)) = WH oldmap w h r c moves
     Space Box d'' = get warehouse r'' c''
     (r, c) = step (one_eighty dir) r' c'
     (r'', c'') = step dir r' c'
+undo other = other
 
 warehouse_solved :: Warehouse -> Bool
 warehouse_solved = all aux . whmap

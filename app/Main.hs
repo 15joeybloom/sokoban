@@ -1,9 +1,9 @@
 module Main where
 
-import Lib
+import Sokoban
 
 Just warehouse =
-  make_warehouse
+  warehouse_from_list
     [ [Wall, Wall, Wall, Wall, Wall, Wall]
     , [Wall, mpty, mpty, mpty, mpty, Wall]
     , [Wall, mpty, boxn, boxd, mpty, Wall]
