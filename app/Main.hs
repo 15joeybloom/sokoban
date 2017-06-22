@@ -3,7 +3,7 @@ module Main where
 import Sokoban
 
 Just warehouse =
-  warehouse_from_list
+  warehouseFromList
     [ [Wall, Wall, Wall, Wall, Wall, Wall]
     , [Wall, mpty, mpty, mpty, mpty, Wall]
     , [Wall, mpty, boxn, boxd, mpty, Wall]
@@ -21,14 +21,14 @@ Just warehouse =
 main :: IO ()
 main = do
   putStrLn "Welcome to Sokoban!"
-  game_loop warehouse
+  gameLoop warehouse
 
-game_loop :: Warehouse -> IO ()
-game_loop wh = do
+gameLoop :: Warehouse -> IO ()
+gameLoop wh = do
   putStr "Moves: "
-  putStrLn . show $ move_count wh
-  print_warehouse wh
-  if warehouse_solved wh
+  print $ moveCount wh
+  printWarehouse wh
+  if warehouseSolved wh
     then do
       putStrLn "Congratulations!"
       return ()
@@ -39,37 +39,37 @@ game_loop wh = do
       case input of
         'u' -> do
           putStrLn "Undo"
-          game_loop $ undo wh
+          gameLoop $ undo wh
         _ -> do
-          let (newwh, move_done) =
-                case char_dir input of
+          let (newwh, moveDone) =
+                case charDir input of
                   Just dir -> move dir wh
                   Nothing -> (wh, NoMove)
-          putStrLn $ show move_done
-          game_loop newwh
+          print moveDone
+          gameLoop newwh
   where
-    char_dir 'h' = Just West
-    char_dir 'j' = Just South
-    char_dir 'k' = Just North
-    char_dir 'l' = Just East
-    char_dir 'w' = Just North
-    char_dir 'a' = Just West
-    char_dir 's' = Just South
-    char_dir 'd' = Just East
-    char_dir _ = Nothing
+    charDir 'h' = Just West
+    charDir 'j' = Just South
+    charDir 'k' = Just North
+    charDir 'l' = Just East
+    charDir 'w' = Just North
+    charDir 'a' = Just West
+    charDir 's' = Just South
+    charDir 'd' = Just East
+    charDir _ = Nothing
 
-print_warehouse :: Warehouse -> IO ()
-print_warehouse wh = sequence_ $ map print_row [0 .. w - 1]
+printWarehouse :: Warehouse -> IO ()
+printWarehouse wh = mapM_ printRow [0 .. w - 1]
   where
-    print_row r = do
-      sequence_ $ map (print_cell r) [0 .. h - 1]
+    printRow r = do
+      mapM_ (printCell r) [0 .. h - 1]
       putChar '\n'
-    print_cell r c = putStr $ square_str $ get wh r c
-    (w, h) = warehouse_dimensions wh
-    square_str (Space Empty Not) = "  "
-    square_str (Space Empty Dot) = "⬤ "
-    square_str (Space Box Not) = "⬛ "
-    square_str (Space Box Dot) = "⬜ "
-    square_str (Space Player Not) = "☆ "
-    square_str (Space Player Dot) = "★ "
-    square_str Wall = "▦ "
+    printCell r c = putStr $ squareStr $ get wh r c
+    (w, h) = warehouseDimensions wh
+    squareStr (Space Empty Not) = "  "
+    squareStr (Space Empty Dot) = "⬤ "
+    squareStr (Space Box Not) = "⬛ "
+    squareStr (Space Box Dot) = "⬜ "
+    squareStr (Space Player Not) = "☆ "
+    squareStr (Space Player Dot) = "★ "
+    squareStr Wall = "▦ "

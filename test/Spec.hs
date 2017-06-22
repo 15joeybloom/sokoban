@@ -25,10 +25,10 @@ instance Arbitrary Warehouse where
     pc <- elements [0 .. 9]
     squares <- sequence $ repeat $ arbitrary
     let map = H.fromList $ zip [(x, y) | x <- [0 .. 9], y <- [0 .. 9]] squares
-    return . fromJust . warehouse_from_map $
+    return . fromJust . warehouseFromMap $
       H.insert (pr, pc) (Space Player Not) map
 
-should_not_move dir w = do
+shouldNotMove dir w = do
   m `shouldBe` NoMove
   w2 `shouldBe` w
   where
@@ -39,38 +39,38 @@ main =
   hspec $ do
     describe "Warehouse" $ do
       let Just w =
-            warehouse_from_list
+            warehouseFromList
               [ [Space Empty Dot, Space Player Not, Space Box Not, Wall]
               , [Wall, Space Box Not, Space Box Not]
               , [Wall, Space Empty Not]
               , [Wall, Space Box Not]
               , [Wall, Space Empty Not]
               ]
-      describe "warehouse_from_list" $ do
+      describe "warehouseFromList" $ do
         it "calculates correctly the Warehouse dimensions" $ do
-          warehouse_dimensions w `shouldBe` (4, 5)
+          warehouseDimensions w `shouldBe` (4, 5)
         it "returns Nothing if there is no Player" $ do
-          warehouse_from_list [[Wall]] `shouldBe` Nothing
-      describe "warehouse_from_map" $ do
+          warehouseFromList [[Wall]] `shouldBe` Nothing
+      describe "warehouseFromMap" $ do
         it "returns Nothing if there is no Player" $ do
-          warehouse_from_map H.empty `shouldBe` Nothing
-          warehouse_from_map (H.singleton (1, 1) $ Space Empty Not) `shouldBe`
+          warehouseFromMap H.empty `shouldBe` Nothing
+          warehouseFromMap (H.singleton (1, 1) $ Space Empty Not) `shouldBe`
             Nothing
         it "returns Nothing if there is more than one Player" $ do
           let m =
                 H.fromList
                   [((0, 0), Space Player Not), ((1, 1), Space Player Not)]
-          warehouse_from_map m `shouldBe` Nothing
+          warehouseFromMap m `shouldBe` Nothing
         it "calculates correctly the Warehouse dimensions" $ do
           let Just warehouse =
-                warehouse_from_map $
+                warehouseFromMap $
                 H.fromList
                   [ ((6, 6), Wall)
                   , ((3, 3), Space Box Dot)
                   , ((2, 3), Space Player Not)
                   , ((2, 4), Space Empty Not)
                   ]
-          warehouse_dimensions warehouse `shouldBe` (5, 4)
+          warehouseDimensions warehouse `shouldBe` (5, 4)
       describe "get" $ do
         it "returns Wall for coords outside the Warehouse" $ do
           get w 0 (-1) `shouldBe` Wall
@@ -96,21 +96,21 @@ main =
           get w2 1 1 `shouldBe` Space Player Not
           get w2 2 1 `shouldBe` Space Box Not
         it "Doesn't move the Player outside of the Warehouse" $
-          should_not_move North w
+          shouldNotMove North w
         it "Doesn't move the Player into a Wall" $ do
           let (w2, m) = move West w
-          should_not_move South w2
-        it "Doesn't push a Box into a Wall" $ should_not_move East w
+          shouldNotMove South w2
+        it "Doesn't push a Box into a Wall" $ shouldNotMove East w
         it "Doesn't push a Box outside of the Warehouse" $ do
           let (w2, m) = move South w
-          should_not_move East w2
+          shouldNotMove East w2
         it "Doesn't push more than one Box" $ do
           let (w2, m) = move South w
-          should_not_move South w2
+          shouldNotMove South w2
       describe "undo" $
-        prop "Returns the board to exactly the same state" prop_undo
+        prop "Returns the board to exactly the same state" propUndo
 
-prop_undo wh d = (== wh) $ undo $ fst $ move d wh
+propUndo wh d = (== wh) $ undo $ fst $ move d wh
 --Idea: property test that the number of Boxes, Dots, doesn't change for a
 --random move on a random board.
 --Idea: property test that the board is unchanged after a NoMove is returned

@@ -1,3 +1,4 @@
 .hindent.yaml
 .stack-work
+*.swp
 dist/
