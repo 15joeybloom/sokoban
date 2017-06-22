@@ -14,6 +14,7 @@ module Sokoban
   , move
   , warehouse_solved
   , undo
+  , move_count
   ) where
 
 import Data.HashMap.Strict as H
@@ -128,9 +129,9 @@ one_eighty West = East
 one_eighty East = West
 
 undo :: Warehouse -> Warehouse
-undo warehouse@(WH {move_stack = (NoMove:moves)}) =
+undo warehouse@WH {move_stack = (NoMove:moves)} =
   warehouse {move_stack = moves}
-undo warehouse@(WH {move_stack = (Walk dir:moves)}) =
+undo warehouse@WH {move_stack = (Walk dir:moves)} =
   moved_back {move_stack = moves}
   where
     moved_back = fst $ move (one_eighty dir) warehouse
@@ -146,6 +147,8 @@ undo warehouse@(WH newmap w h r' c' (Push dir:moves)) = WH oldmap w h r c moves
     (r, c) = step (one_eighty dir) r' c'
     (r'', c'') = step dir r' c'
 undo other = other
+
+move_count = length . move_stack
 
 warehouse_solved :: Warehouse -> Bool
 warehouse_solved = all aux . whmap

@@ -25,6 +25,8 @@ main = do
 
 game_loop :: Warehouse -> IO ()
 game_loop wh = do
+  putStr "Moves: "
+  putStrLn . show $ move_count wh
   print_warehouse wh
   if warehouse_solved wh
     then do
@@ -34,12 +36,17 @@ game_loop wh = do
       putStrLn "hjkl or wasd to move: "
       input <- getChar
       putStrLn ""
-      let (newwh, move_done) =
-            case char_dir input of
-              Just dir -> move dir wh
-              Nothing -> (wh, NoMove)
-      putStrLn $ show move_done
-      game_loop newwh
+      case input of
+        'u' -> do
+          putStrLn "Undo"
+          game_loop $ undo wh
+        _ -> do
+          let (newwh, move_done) =
+                case char_dir input of
+                  Just dir -> move dir wh
+                  Nothing -> (wh, NoMove)
+          putStrLn $ show move_done
+          game_loop newwh
   where
     char_dir 'h' = Just West
     char_dir 'j' = Just South

@@ -1,8 +1,9 @@
 import qualified Data.HashMap.Strict as H
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust)
 import Generic.Random.Generic
 import Sokoban
 import Test.Hspec
+import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck
 
 instance Arbitrary Contents where
@@ -20,15 +21,13 @@ instance Arbitrary Direction where
 
 instance Arbitrary Warehouse where
   arbitrary = do
-    pr <- elements [0..9]
-    pc <- elements [0..9]
+    pr <- elements [0 .. 9]
+    pc <- elements [0 .. 9]
     squares <- sequence $ repeat $ arbitrary
     let map = H.fromList $ zip [(x, y) | x <- [0 .. 9], y <- [0 .. 9]] squares
-    return $
-      fromMaybe (error "shit") $
-        warehouse_from_map $ H.insert (pr, pc) (Space Player Not) map
+    return . fromJust . warehouse_from_map $
+      H.insert (pr, pc) (Space Player Not) map
 
-should_not_move :: Direction -> Warehouse -> Expectation
 should_not_move dir w = do
   m `shouldBe` NoMove
   w2 `shouldBe` w
@@ -108,9 +107,8 @@ main =
         it "Doesn't push more than one Box" $ do
           let (w2, m) = move South w
           should_not_move South w2
-      describe "undo" $ do
-        it "Returns the board to exactly the same state" $ do
-          property prop_undo
+      describe "undo" $
+        prop "Returns the board to exactly the same state" prop_undo
 
 prop_undo wh d = (== wh) $ undo $ fst $ move d wh
 --Idea: property test that the number of Boxes, Dots, doesn't change for a
