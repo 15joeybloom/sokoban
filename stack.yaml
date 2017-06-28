@@ -2,5 +2,5 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-extra-deps: []
+extra-deps: [ terminfo-hs-0.2.1 ]
 resolver: lts-8.17
