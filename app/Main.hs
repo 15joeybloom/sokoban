@@ -59,10 +59,10 @@ gameLoop wh = do
     charDir _ = Nothing
 
 printWarehouse :: Warehouse -> IO ()
-printWarehouse wh = mapM_ printRow [0 .. w - 1]
+printWarehouse wh = mapM_ printRow [0 .. h - 1]
   where
     printRow r = do
-      mapM_ (printCell r) [0 .. h - 1]
+      mapM_ (printCell r) [0 .. w - 1]
       putChar '\n'
     printCell r c = putStr $ squareStr $ get wh r c
     (w, h) = warehouseDimensions wh
