@@ -71,25 +71,28 @@ gameLoop vty wh =
           drawUI vty newwh $ show m
           gameLoop vty newwh
         EvKey (KChar 'q') [] -> quit "Bye for now."
-        EvKey (KChar input) [] -> do
-          let (newwh, moveDone) =
-                case charDir input of
-                  Just dir -> move dir wh
-                  Nothing -> (wh, NoMove)
-          drawUI vty newwh $ show moveDone
-          gameLoop vty newwh
-        _ -> gameLoop vty wh
+        e -> case evDir e of
+          Nothing -> gameLoop vty wh
+          Just dir -> do
+            let (newwh, moveDone) = move dir wh
+            drawUI vty newwh $ show moveDone
+            gameLoop vty newwh
   where
     quit m = do
       drawUI vty wh $ m ++ " Press q to exit."
       e <- nextEvent vty
       unless (EvKey (KChar 'q') [] == e) $ quit m
-    charDir 'h' = Just West
-    charDir 'j' = Just South
-    charDir 'k' = Just North
-    charDir 'l' = Just East
-    charDir 'w' = Just North
-    charDir 'a' = Just West
-    charDir 's' = Just South
-    charDir 'd' = Just East
-    charDir _ = Nothing
+    evDir (EvKey (KChar 'h') []) = Just West
+    evDir (EvKey (KChar 'j') []) = Just South
+    evDir (EvKey (KChar 'k') []) = Just North
+    evDir (EvKey (KChar 'l') []) = Just East
+    evDir (EvKey (KChar 'w') []) = Just North
+    evDir (EvKey (KChar 'a') []) = Just West
+    evDir (EvKey (KChar 's') []) = Just South
+    evDir (EvKey (KChar 'd') []) = Just East
+    evDir (EvKey (KChar 'd') []) = Just East
+    evDir (EvKey KLeft []) = Just West
+    evDir (EvKey KRight []) = Just East
+    evDir (EvKey KUp []) = Just North
+    evDir (EvKey KDown []) = Just South
+    evDir _ = Nothing
