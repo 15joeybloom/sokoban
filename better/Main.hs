@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+
 module Main where
 
 import Control.Monad
@@ -23,22 +24,37 @@ Just warehouse =
     boxd = Space Box Dot
 
 warehouseImage :: Warehouse -> Image
-warehouseImage wh = vertCat $ map rowImage [ 0 .. h - 1 ]
+warehouseImage wh = vertCat $ map rowImage [0 .. h - 1]
   where
-    rowImage r = horizCat $ map (cellImage r) [ 0 .. w - 1 ]
-    cellImage r c = string defAttr $ squareStr $ get wh r c
     (w, h) = warehouseDimensions wh
-    squareStr (Space Empty Not) = "  "
-    squareStr (Space Empty Dot) = "⬤ "
-    squareStr (Space Box Not) = "⬛ "
-    squareStr (Space Box Dot) = "⬜ "
-    squareStr (Space Player Not) = "☆ "
-    squareStr (Space Player Dot) = "★ "
-    squareStr Wall = "▦ "
+    rowImage r = horizCat $ map (cellImage r) [0 .. w - 1]
+    cellImage r c =
+      case get wh r c of
+        (Space Empty Not) -> string myDef "  "
+        (Space Empty Dot) -> string myDef "⬤ "
+        (Space Box Not) -> string myDef "[]"
+        (Space Box Dot) -> blackSpace <|> blackSpace
+        (Space Player Not) -> string (myDef `withStyle` bold) "☆ "
+        (Space Player Dot) -> string myDef "★ "
+        Wall -> string (defAttr `withForeColor` grey `withBackColor` grey) "  "
+    whiteSpace = string (myDef `withForeColor` white `withBackColor` white) " "
+    blackSpace = string (myDef `withForeColor` black `withBackColor` black) " "
+    grey = rgbColor 48 48 48
+
+myDef = defAttr `withForeColor` black `withBackColor` white
+
+drawUI vty wh message = update vty picture
+  where
+    picture =
+      Picture
+      {picCursor = NoCursor, picLayers = [image], picBackground = background}
+    image = warehouseImage wh <-> string myDef moves <-> string myDef message
+    background = Background {backgroundChar = ' ', backgroundAttr = myDef}
+    moves = "Moves: " ++ show (moveCount wh)
 
 main = do
   vty <- mkVty defaultConfig
-  update vty $ picForImage $ warehouseImage warehouse
+  drawUI vty warehouse ""
   gameLoop vty warehouse
   shutdown vty
   putStrLn "Thanks for playing!"
@@ -52,23 +68,20 @@ gameLoop vty wh =
         EvKey (KChar 'u') [] -> do
           let newwh = undo wh
               m = "Undo"
-          recurse newwh m
+          drawUI vty newwh $ show m
+          gameLoop vty newwh
         EvKey (KChar 'q') [] -> quit "Bye for now."
         EvKey (KChar input) [] -> do
           let (newwh, moveDone) =
                 case charDir input of
                   Just dir -> move dir wh
                   Nothing -> (wh, NoMove)
-          recurse newwh $ show moveDone
+          drawUI vty newwh $ show moveDone
+          gameLoop vty newwh
         _ -> gameLoop vty wh
   where
-    recurse newwh m = do
-      update vty $ picForImage $ warehouseImage newwh <-> string defAttr m
-      gameLoop vty newwh
     quit m = do
-      update vty $
-        picForImage $
-        warehouseImage wh <-> string defAttr (m ++ " Press q to exit.")
+      drawUI vty wh $ m ++ " Press q to exit."
       e <- nextEvent vty
       unless (EvKey (KChar 'q') [] == e) $ quit m
     charDir 'h' = Just West
