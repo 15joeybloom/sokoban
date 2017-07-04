@@ -91,7 +91,7 @@ warehouseFromMap oldMap
     w = (+ 1) $ foldl (\x (_, c) -> max x c) 0 coords
     h = (+ 1) $ foldl (\x (r, _) -> max x r) 0 coords
     coords = H.keys newMap
-    newMap = H.filterWithKey (\(r, c) v -> r >= 0 && c >= 0 && v /= Wall) oldMap
+    newMap = H.filterWithKey (\(r, c) _ -> r >= 0 && c >= 0) oldMap
 
 warehouseDimensions wh = (width wh, height wh)
 

@@ -57,7 +57,7 @@ main =
           warehouseFromString "pp" `shouldBe` Nothing
       describe "warehouseFromList" $ do
         it "calculates correctly the Warehouse dimensions" $
-          warehouseDimensions w `shouldBe` (3, 5)
+          warehouseDimensions w `shouldBe` (4, 5)
         it "returns Nothing if there is no Player" $
           warehouseFromList [[Wall]] `shouldBe` Nothing
         it "returns Nothing if there are multiple Players" $
@@ -68,12 +68,12 @@ main =
           let Just warehouse =
                 warehouseFromMap $
                 H.fromList
-                  [ ((6, 6), Wall)
+                  [ ((6, 5), Wall)
                   , ((3, 3), Space Box Dot)
                   , ((2, 3), Space Player Not)
                   , ((2, 4), Space Empty Not)
                   ]
-          warehouseDimensions warehouse `shouldBe` (5, 4)
+          warehouseDimensions warehouse `shouldBe` (6, 7)
         it "returns Nothing if there is no Player" $ do
           warehouseFromMap H.empty `shouldBe` Nothing
           warehouseFromMap (H.singleton (1, 1) $ Space Empty Not) `shouldBe`
