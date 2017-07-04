@@ -68,10 +68,12 @@ warehouseFromString :: String -> Maybe Warehouse
 warehouseFromString = warehouseFromList . (map . map) charSquare . lines
   where
     charSquare 'w' = Wall
-    charSquare ' ' = Space Empty Not
-    charSquare 'd' = Space Empty Dot
     charSquare 'b' = Space Box Not
+    charSquare 'c' = Space Box Dot
     charSquare 'p' = Space Player Not
+    charSquare 'q' = Space Player Dot
+    charSquare 'd' = Space Empty Dot
+    charSquare _   = Space Empty Not
 
 warehouseFromList :: [[Square]] -> Maybe Warehouse
 warehouseFromList grid = warehouseFromMap newMap
