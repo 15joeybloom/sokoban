@@ -3,7 +3,10 @@
 module Main where
 
 import Control.Monad
+import Data.Maybe (fromJust)
 import Graphics.Vty
+import System.Environment (getArgs)
+import System.IO
 
 import Sokoban
 
@@ -53,15 +56,24 @@ drawUI vty wh message = update vty picture
     moves = "Moves: " ++ show (moveCount wh)
 
 main = do
+  args <- getArgs
+  case args of
+    [] -> startGame warehouse
+    (name:_) ->
+      withFile name ReadMode (\handle -> do
+        contents <- hGetContents handle
+        startGame $ fromJust $ warehouseFromString contents)
+
+startGame w = do
   vty <- mkVty defaultConfig
-  drawUI vty warehouse ""
-  gameLoop vty warehouse
+  drawUI vty w ""
+  gameLoop vty w
   shutdown vty
   putStrLn "Thanks for playing!"
 
 gameLoop vty wh =
   if warehouseSolved wh
-    then quit "Congratulations! Press any key to exit."
+    then quit "Congratulations!"
     else do
       e <- nextEvent vty
       case e of
@@ -89,7 +101,6 @@ gameLoop vty wh =
     evDir (EvKey (KChar 'w') []) = Just North
     evDir (EvKey (KChar 'a') []) = Just West
     evDir (EvKey (KChar 's') []) = Just South
-    evDir (EvKey (KChar 'd') []) = Just East
     evDir (EvKey (KChar 'd') []) = Just East
     evDir (EvKey KLeft []) = Just West
     evDir (EvKey KRight []) = Just East
