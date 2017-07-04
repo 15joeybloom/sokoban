@@ -1,3 +1,5 @@
+module Main where
+
 import qualified Data.HashMap.Strict as H
 import Data.Maybe (fromJust)
 import Generic.Random.Generic
