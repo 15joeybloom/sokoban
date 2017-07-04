@@ -5,6 +5,7 @@ module Sokoban
   , Dot(..)
   , Square(..)
   , Warehouse
+  , warehouseFromString
   , warehouseFromList
   , warehouseFromMap
   , warehouseDimensions
@@ -17,7 +18,7 @@ module Sokoban
   , moveCount
   ) where
 
-import Data.HashMap.Strict as H
+import qualified Data.HashMap.Strict as H
 import Data.List (findIndex)
 import GHC.Generics (Generic)
 
@@ -63,30 +64,34 @@ data Warehouse = WH
 isPlayer (Space Player _) = True
 isPlayer _ = False
 
-warehouseFromList :: [[Square]] -> Maybe Warehouse
-warehouseFromList grid = do
-  pr <- findIndex (any isPlayer) grid
-  pc <- findIndex isPlayer $ grid !! pr
-  return $ WH newmap w h pr pc []
+warehouseFromString :: String -> Maybe Warehouse
+warehouseFromString = warehouseFromList . (map . map) charSquare . lines
   where
-    newmap = foldl aux H.empty $ zip [0 ..] grid
+    charSquare 'w' = Wall
+    charSquare ' ' = Space Empty Not
+    charSquare 'd' = Space Empty Dot
+    charSquare 'b' = Space Box Not
+    charSquare 'p' = Space Player Not
+
+warehouseFromList :: [[Square]] -> Maybe Warehouse
+warehouseFromList grid = warehouseFromMap newMap
+  where
+    newMap = foldl aux H.empty $ zip [0 ..] grid
     aux h (r, xs) = foldl aux2 h $ zip [0 ..] xs
       where
         aux2 h (c, x) = H.insert (r, c) x h
-    w = foldl (flip $ max . length) 0 grid
-    h = length grid
 
 warehouseFromMap :: H.HashMap (Int, Int) Square -> Maybe Warehouse
-warehouseFromMap map
+warehouseFromMap oldMap
   | length playersMap /= 1 = Nothing
-  | otherwise = Just $ WH newmap w h pr pc []
+  | otherwise = Just $ WH newMap w h pr pc []
   where
-    (pr, pc) = head $ keys playersMap
-    playersMap = H.filter isPlayer newmap
+    (pr, pc) = head $ H.keys playersMap
+    playersMap = H.filter isPlayer newMap
     w = (+ 1) $ foldl (\x (_, c) -> max x c) 0 coords
     h = (+ 1) $ foldl (\x (r, _) -> max x r) 0 coords
-    coords = keys newmap
-    newmap = filterWithKey (\(r, c) v -> r >= 0 && c >= 0 && v /= Wall) map
+    coords = H.keys newMap
+    newMap = H.filterWithKey (\(r, c) v -> r >= 0 && c >= 0 && v /= Wall) oldMap
 
 warehouseDimensions wh = (width wh, height wh)
 
@@ -99,23 +104,23 @@ step West r c = (r, c - 1)
 step East r c = (r, c + 1)
 
 move :: Direction -> Warehouse -> (Warehouse, Move)
-move dir warehouse@(WH oldmap w h r c stk) =
+move dir warehouse@(WH oldMap w h r c stk) =
   case get warehouse r' c' of
     Space Empty d' ->
-      let newmap =
+      let newMap =
             (H.insert (r, c) (Space Empty d) $
-             H.insert (r', c') (Space Player d') oldmap)
+             H.insert (r', c') (Space Player d') oldMap)
           move = Walk dir
-       in (WH newmap w h r' c' (move : stk), move)
+       in (WH newMap w h r' c' (move : stk), move)
     Space Box d' ->
       case get warehouse r'' c'' of
         Space Empty d'' ->
-          let newmap =
+          let newMap =
                 H.insert (r, c) (Space Empty d) $
                 H.insert (r', c') (Space Player d') $
-                H.insert (r'', c'') (Space Box d'') oldmap
+                H.insert (r'', c'') (Space Box d'') oldMap
               move = Push dir
-           in (WH newmap w h r' c' (move : stk), move)
+           in (WH newMap w h r' c' (move : stk), move)
         _ -> (warehouse, NoMove)
     _ -> (warehouse, NoMove)
   where
@@ -135,12 +140,12 @@ undo warehouse@WH {moveStack = (Walk dir:moves)} =
   movedBack {moveStack = moves}
   where
     movedBack = fst $ move (oneEighty dir) warehouse
-undo warehouse@(WH newmap w h r' c' (Push dir:moves)) = WH oldmap w h r c moves
+undo warehouse@(WH newMap w h r' c' (Push dir:moves)) = WH oldMap w h r c moves
   where
-    oldmap =
+    oldMap =
       H.insert (r, c) (Space Player d) $
       H.insert (r', c') (Space Box d') $
-      H.insert (r'', c'') (Space Empty d'') newmap
+      H.insert (r'', c'') (Space Empty d'') newMap
     Space Empty d = get warehouse r c
     Space Player d' = get warehouse r' c'
     Space Box d'' = get warehouse r'' c''

@@ -23,7 +23,7 @@ instance Arbitrary Warehouse where
   arbitrary = do
     pr <- elements [0 .. 9]
     pc <- elements [0 .. 9]
-    squares <- sequence $ repeat $ arbitrary
+    squares <- sequence $ repeat arbitrary
     let map = H.fromList $ zip [(x, y) | x <- [0 .. 9], y <- [0 .. 9]] squares
     return . fromJust . warehouseFromMap $
       H.insert (pr, pc) (Space Player Not) map
@@ -46,21 +46,22 @@ main =
               , [Wall, Space Box Not]
               , [Wall, Space Empty Not]
               ]
+      describe "warehouseFromString" $ do
+        it "works" $
+          warehouseFromString "dpbw\nwbb\nw \nwb\nw \n" `shouldBe` Just w
+        it "returns Nothing if there is no Player" $
+          warehouseFromString "w" `shouldBe` Nothing
+        it "returns Nothing if there are multiple Players" $
+          warehouseFromString "pp" `shouldBe` Nothing
       describe "warehouseFromList" $ do
-        it "calculates correctly the Warehouse dimensions" $ do
-          warehouseDimensions w `shouldBe` (4, 5)
-        it "returns Nothing if there is no Player" $ do
+        it "calculates correctly the Warehouse dimensions" $
+          warehouseDimensions w `shouldBe` (3, 5)
+        it "returns Nothing if there is no Player" $
           warehouseFromList [[Wall]] `shouldBe` Nothing
+        it "returns Nothing if there are multiple Players" $
+          warehouseFromList [[Space Player Not], [Space Player Not]] `shouldBe`
+          Nothing
       describe "warehouseFromMap" $ do
-        it "returns Nothing if there is no Player" $ do
-          warehouseFromMap H.empty `shouldBe` Nothing
-          warehouseFromMap (H.singleton (1, 1) $ Space Empty Not) `shouldBe`
-            Nothing
-        it "returns Nothing if there is more than one Player" $ do
-          let m =
-                H.fromList
-                  [((0, 0), Space Player Not), ((1, 1), Space Player Not)]
-          warehouseFromMap m `shouldBe` Nothing
         it "calculates correctly the Warehouse dimensions" $ do
           let Just warehouse =
                 warehouseFromMap $
@@ -71,6 +72,15 @@ main =
                   , ((2, 4), Space Empty Not)
                   ]
           warehouseDimensions warehouse `shouldBe` (5, 4)
+        it "returns Nothing if there is no Player" $ do
+          warehouseFromMap H.empty `shouldBe` Nothing
+          warehouseFromMap (H.singleton (1, 1) $ Space Empty Not) `shouldBe`
+            Nothing
+        it "returns Nothing if there are multiple Players" $ do
+          let m =
+                H.fromList
+                  [((0, 0), Space Player Not), ((1, 1), Space Player Not)]
+          warehouseFromMap m `shouldBe` Nothing
       describe "get" $ do
         it "returns Wall for coords outside the Warehouse" $ do
           get w 0 (-1) `shouldBe` Wall
