@@ -18,6 +18,7 @@ module Sokoban
   , moveCount
   ) where
 
+import Control.Arrow ((&&&))
 import qualified Data.HashMap.Strict as H
 import Data.List (findIndex)
 import GHC.Generics (Generic)
@@ -95,7 +96,7 @@ warehouseFromMap oldMap
     coords = H.keys newMap
     newMap = H.filterWithKey (\(r, c) _ -> r >= 0 && c >= 0) oldMap
 
-warehouseDimensions wh = (width wh, height wh)
+warehouseDimensions = width &&& height
 
 get :: Warehouse -> Int -> Int -> Square
 get warehouse r c = H.lookupDefault Wall (r, c) $ whmap warehouse
