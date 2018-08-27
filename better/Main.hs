@@ -10,6 +10,7 @@ import System.IO
 
 import Sokoban
 
+warehouse :: Warehouse
 Just warehouse =
   warehouseFromList
     [ [Wall, Wall, Wall, Wall, Wall, Wall]
@@ -33,38 +34,40 @@ warehouseImage wh = vertCat $ map rowImage [0 .. h - 1]
     rowImage r = horizCat $ map (cellImage r) [0 .. w - 1]
     cellImage r c =
       case get wh r c of
-        (Space Empty Not) -> string myDef "  "
-        (Space Empty Dot) -> string myDef "⬤ "
-        (Space Box Not) -> string myDef "[]"
+        (Space Empty Not) -> string blackOnWhite "  "
+        (Space Empty Dot) -> string blackOnWhite "⬤ "
+        (Space Box Not) -> string blackOnWhite "[]"
         (Space Box Dot) -> blackSpace <|> blackSpace
-        (Space Player Not) -> string (myDef `withStyle` bold) "☆ "
-        (Space Player Dot) -> string myDef "★ "
+        (Space Player Not) -> string (blackOnWhite `withStyle` bold) "☆ "
+        (Space Player Dot) -> string blackOnWhite "★ "
         Wall -> string (defAttr `withForeColor` grey `withBackColor` grey) "  "
-    whiteSpace = string (myDef `withForeColor` white `withBackColor` white) " "
-    blackSpace = string (myDef `withForeColor` black `withBackColor` black) " "
-    grey = rgbColor 10 10 10
+    blackSpace = string (defAttr `withForeColor` black `withBackColor` black) " "
+    grey = rgbColor 10 10 (10 :: Int)
 
-myDef = defAttr `withForeColor` black `withBackColor` white
+blackOnWhite :: Attr
+blackOnWhite = defAttr `withForeColor` black `withBackColor` white
 
+drawUI :: Vty -> Warehouse -> String -> IO ()
 drawUI vty wh message = update vty picture
   where
     picture =
       Picture
       {picCursor = NoCursor, picLayers = [image], picBackground = background}
     image =
-      instructions <-> legend <-> warehouseImage wh <-> string myDef moves <-> string myDef message
-    background = Background {backgroundChar = ' ', backgroundAttr = myDef}
+      instructions <-> legend <-> warehouseImage wh <-> string blackOnWhite moves <-> string blackOnWhite message
+    background = Background {backgroundChar = ' ', backgroundAttr = blackOnWhite}
     moves = "Moves: " ++ show (moveCount wh)
     instructions =
-      string myDef "Instructions: " <|>
-      (string myDef "hjkl or wasd to move" <-> string myDef "u to undo" <->
-       string myDef "q to quit")
-    legend = string myDef "The walls are grey."
-      <-> string myDef "☆ is the player. If the player is standing on a dot, then the star is filled ★."
-      <-> string myDef "[] is a box. If the box is on a dot, then it is just a solid black square."
-      <-> string myDef "⬤  is a dot. Push a box onto each dot to win the game."
+      string blackOnWhite "Instructions: " <|>
+      (string blackOnWhite "hjkl or wasd to move" <-> string blackOnWhite "u to undo" <->
+       string blackOnWhite "q to quit")
+    legend = string blackOnWhite "The walls are grey."
+      <-> string blackOnWhite "☆ is the player. If the player is standing on a dot, then the star is filled ★."
+      <-> string blackOnWhite "[] is a box. If the box is on a dot, then it is just a solid black square."
+      <-> string blackOnWhite "⬤  is a dot. Push a box onto each dot to win the game."
 
 
+main :: IO ()
 main = do
   args <- getArgs
   case args of
@@ -74,6 +77,7 @@ main = do
          contents <- hGetContents handle
          startGame $ fromJust $ warehouseFromString contents)
 
+startGame :: Warehouse -> IO ()
 startGame w = do
   vty <- mkVty defaultConfig
   drawUI vty w ""
@@ -81,6 +85,7 @@ startGame w = do
   shutdown vty
   putStrLn "Thanks for playing!"
 
+gameLoop :: Vty -> Warehouse -> IO ()
 gameLoop vty wh =
   if warehouseSolved wh
     then quit "Congratulations!"
@@ -93,7 +98,7 @@ gameLoop vty wh =
           drawUI vty newwh $ show m
           gameLoop vty newwh
         EvKey (KChar 'q') [] -> quit "Bye for now."
-        e -> case evDir e of
+        _ -> case evDir e of
           Nothing -> gameLoop vty wh
           Just dir -> do
             let (newwh, moveDone) = move dir wh

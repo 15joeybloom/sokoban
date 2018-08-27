@@ -20,7 +20,6 @@ module Sokoban
 
 import Control.Arrow ((&&&))
 import qualified Data.HashMap.Strict as H
-import Data.List (findIndex)
 import GHC.Generics (Generic)
 
 data Contents
@@ -57,11 +56,12 @@ data Warehouse = WH
   { whmap :: H.HashMap (Int, Int) Square
   , width :: Int
   , height :: Int
-  , playerRow :: Int
-  , playerColumn :: Int
+  , _playerRow :: Int
+  , _playerColumn :: Int
   , moveStack :: [Move]
   } deriving (Show, Eq)
 
+isPlayer :: Square -> Bool
 isPlayer (Space Player _) = True
 isPlayer _ = False
 
@@ -80,9 +80,9 @@ warehouseFromList :: [[Square]] -> Maybe Warehouse
 warehouseFromList grid = warehouseFromMap newMap
   where
     newMap = foldl aux H.empty $ zip [0 ..] grid
-    aux h (r, xs) = foldl aux2 h $ zip [0 ..] xs
+    aux mapWithoutRow (r, xs) = foldl aux2 mapWithoutRow $ zip [0 ..] xs
       where
-        aux2 h (c, x) = H.insert (r, c) x h
+        aux2 mapWithoutCell (c, x) = H.insert (r, c) x mapWithoutCell
 
 warehouseFromMap :: H.HashMap (Int, Int) Square -> Maybe Warehouse
 warehouseFromMap oldMap
@@ -96,11 +96,13 @@ warehouseFromMap oldMap
     coords = H.keys newMap
     newMap = H.filterWithKey (\(r, c) _ -> r >= 0 && c >= 0) oldMap
 
+warehouseDimensions :: Warehouse -> (Int, Int)
 warehouseDimensions = width &&& height
 
 get :: Warehouse -> Int -> Int -> Square
 get warehouse r c = H.lookupDefault Wall (r, c) $ whmap warehouse
 
+step :: (Num r, Num c) => Direction -> r -> c -> (r, c)
 step North r c = (r - 1, c)
 step South r c = (r + 1, c)
 step West r c = (r, c - 1)
@@ -113,8 +115,8 @@ move dir warehouse@(WH oldMap w h r c stk) =
       let newMap =
             (H.insert (r, c) (Space Empty d) $
              H.insert (r', c') (Space Player d') oldMap)
-          move = Walk dir
-       in (WH newMap w h r' c' (move : stk), move)
+          theMove = Walk dir
+       in (WH newMap w h r' c' (theMove : stk), theMove)
     Space Box d' ->
       case get warehouse r'' c'' of
         Space Empty d'' ->
@@ -122,8 +124,8 @@ move dir warehouse@(WH oldMap w h r c stk) =
                 H.insert (r, c) (Space Empty d) $
                 H.insert (r', c') (Space Player d') $
                 H.insert (r'', c'') (Space Box d'') oldMap
-              move = Push dir
-           in (WH newMap w h r' c' (move : stk), move)
+              theMove = Push dir
+           in (WH newMap w h r' c' (theMove : stk), theMove)
         _ -> (warehouse, NoMove)
     _ -> (warehouse, NoMove)
   where
@@ -131,6 +133,7 @@ move dir warehouse@(WH oldMap w h r c stk) =
     (r', c') = step dir r c
     (r'', c'') = step dir r' c'
 
+oneEighty :: Direction -> Direction
 oneEighty North = South
 oneEighty South = North
 oneEighty West = East
@@ -156,6 +159,7 @@ undo warehouse@(WH newMap w h r' c' (Push dir:moves)) = WH oldMap w h r c moves
     (r'', c'') = step dir r' c'
 undo other = other
 
+moveCount :: Warehouse -> Int
 moveCount = length . moveStack
 
 warehouseSolved :: Warehouse -> Bool
