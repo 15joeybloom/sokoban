@@ -33,7 +33,7 @@ gameLoop wh = do
       putStrLn "Congratulations!"
       return ()
     else do
-      putStrLn "hjkl or wasd to move: "
+      putStrLn "hjkl or wasd to move, u to undo: "
       input <- getChar
       putStrLn ""
       case input of

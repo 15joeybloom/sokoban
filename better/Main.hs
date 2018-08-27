@@ -42,7 +42,7 @@ warehouseImage wh = vertCat $ map rowImage [0 .. h - 1]
         Wall -> string (defAttr `withForeColor` grey `withBackColor` grey) "  "
     whiteSpace = string (myDef `withForeColor` white `withBackColor` white) " "
     blackSpace = string (myDef `withForeColor` black `withBackColor` black) " "
-    grey = rgbColor 48 48 48
+    grey = rgbColor 10 10 10
 
 myDef = defAttr `withForeColor` black `withBackColor` white
 
@@ -51,9 +51,19 @@ drawUI vty wh message = update vty picture
     picture =
       Picture
       {picCursor = NoCursor, picLayers = [image], picBackground = background}
-    image = warehouseImage wh <-> string myDef moves <-> string myDef message
+    image =
+      instructions <-> legend <-> warehouseImage wh <-> string myDef moves <-> string myDef message
     background = Background {backgroundChar = ' ', backgroundAttr = myDef}
     moves = "Moves: " ++ show (moveCount wh)
+    instructions =
+      string myDef "Instructions: " <|>
+      (string myDef "hjkl or wasd to move" <-> string myDef "u to undo" <->
+       string myDef "q to quit")
+    legend = string myDef "The walls are grey."
+      <-> string myDef "☆ is the player. If the player is standing on a dot, then the star is filled ★."
+      <-> string myDef "[] is a box. If the box is on a dot, then it is just a solid black square."
+      <-> string myDef "⬤  is a dot. Push a box onto each dot to win the game."
+
 
 main = do
   args <- getArgs
@@ -61,8 +71,8 @@ main = do
     [] -> startGame warehouse
     (name:_) ->
       withFile name ReadMode (\handle -> do
-        contents <- hGetContents handle
-        startGame $ fromJust $ warehouseFromString contents)
+         contents <- hGetContents handle
+         startGame $ fromJust $ warehouseFromString contents)
 
 startGame w = do
   vty <- mkVty defaultConfig
